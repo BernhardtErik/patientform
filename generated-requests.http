@@ -1,0 +1,67 @@
+### IntelliJ HTTP Client examples for Patient API
+### You can run these requests directly in JetBrains IDEs.
+
+### Variables
+@host = http://localhost:8081
+@contentType = application/json
+
+### 1) Health check / ping
+GET {{host}}/patients/ping
+
+### 2) List all patients
+GET {{host}}/patients
+Accept: application/json
+
+### 2b) Search patients (returns all if query missing or blank)
+GET {{host}}/patients/search?query=doe
+Accept: application/json
+
+### 3) Create a patient
+POST {{host}}/patients
+Content-Type: {{contentType}}
+Accept: application/json
+
+{
+  "firstName": "Jane",
+  "lastName": "Doe",
+  "email": "jane.doe@example.com",
+  "phoneNumber": "+1-555-1234",
+  "dateOfBirth": "1990-05-20",
+  "idNumber": "9005201234088",
+  "address": "123 Main Street, Cityville",
+  "medicalAid": "HealthPlus",
+  "medicalHistory": "No major surgeries.",
+  "allergies": "Penicillin",
+  "currentMedication": "Ibuprofen"
+}
+
+> {%
+// Capture the created patient's id from the response body
+// This assumes the controller returns the saved patient JSON including id
+client.global.set("10", response.body.id);
+%}
+
+### 4) Get patient by id
+GET {{host}}/patients/{{patientId}}
+Accept: application/json
+
+### 5) Partially update patient (PATCH)
+PATCH {{host}}/patients/{{patientId}}
+Content-Type: {{contentType}}
+Accept: application/json
+
+{
+  "phoneNumber": "+1-555-9876",
+  "address": "456 Oak Avenue, Newtown"
+}
+
+### 6) Verify updated patient
+GET {{host}}/patients/{{patientId}}
+Accept: application/json
+
+### 7) Delete patient
+DELETE {{host}}/patients/{{patientId}}
+
+### 8) Verify deletion (should return 404)
+GET {{host}}/patients/{{patientId}}
+Accept: application/json
