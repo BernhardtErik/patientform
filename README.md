@@ -184,3 +184,69 @@ Troubleshooting Podman specifics:
 - 400 on /patients/search: ensure you call port 8081, not 8080.
 - Database connection errors: verify PostgreSQL is running and credentials in application.properties.
 - CORS errors in browser: ensure origin matches allowedOrigins in CorsConfig or update it accordingly.
+
+
+## Database setup (normal configuration)
+
+Overview
+- Spring Boot app listens on port 8081
+- Default DB connection (matches application.properties):
+  - Host: localhost
+  - Port: 5432
+  - Database: patients
+  - Username: postgres
+  - Password: password
+
+Option A: Run PostgreSQL with Docker or Podman (recommended)
+- Prerequisites: Docker Desktop/Engine + Compose plugin OR Podman/Podman Desktop
+- Start DB from project root:
+  - docker compose up -d
+  - OR podman compose up -d
+- Check status:
+  - docker compose ps  (or podman compose ps)
+  - Optional logs: docker compose logs -f db  (or podman logs -f patientform-postgres)
+- Stop when done:
+  - docker compose down (or podman compose down)
+- If port 5432 is busy, edit compose.yaml to map another host port (e.g., "5433:5432") and update spring.datasource.url accordingly.
+
+Option B: Use a locally installed PostgreSQL (no Docker)
+1) Install PostgreSQL: https://www.postgresql.org/download/
+2) Create a database and user (examples use default superuser "postgres"):
+   - Create database: patients
+   - Ensure you know the password for the postgres user (examples assume password)
+3) Ensure the server listens on localhost:5432 (default). If you change the port, adjust the URL below.
+
+application.properties configuration (src/main/resources/application.properties)
+Use these defaults and adjust if your local setup differs:
+
+server.port=8081
+spring.datasource.url=jdbc:postgresql://localhost:5432/patients
+spring.datasource.username=postgres
+spring.datasource.password=password
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# Hibernate/JPA
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.properties.hibernate.jdbc.time_zone=UTC
+
+# Ensure schema.sql runs at startup (optional)
+spring.sql.init.mode=always
+
+# Disable Spring Boot's Docker Compose integration (supports both Docker and Podman)
+spring.docker.compose.enabled=false
+
+Verification
+- Start the DB (Docker/Podman or local), then run the app:
+  - Windows (PowerShell): .\mvnw spring-boot:run
+  - macOS/Linux: ./mvnw spring-boot:run
+- Health check: GET http://localhost:8081/patients/ping  -> ok
+
+Troubleshooting
+- Connection refused: ensure PostgreSQL is running and listening on the expected port.
+- Authentication failed: verify username/password; update application.properties accordingly.
+- Port in use (5432): change host port in compose.yaml (e.g., 5433:5432) and update spring.datasource.url to jdbc:postgresql://localhost:5433/patients
+- SSL errors on some local setups: append ?sslmode=disable to the JDBC URL if necessary (e.g., jdbc:postgresql://localhost:5432/patients?sslmode=disable)
+- Time zone issues: application sets JDBC time zone to UTC; adjust if needed.
